@@ -1,0 +1,237 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  USER
+  SUPPORT
+  OPERATIONS
+  FINANCE
+  ADMIN
+}
+
+enum VerificationStatus {
+  UNVERIFIED
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum TripStatus {
+  OPEN
+  FULL
+  COMPLETED
+  CANCELLED
+}
+
+enum ShipmentStatus {
+  SEARCHING
+  MATCHED
+  IN_TRANSIT
+  DELIVERED
+  DISPUTED
+  CANCELLED
+}
+
+enum BookingStatus {
+  REQUESTED
+  ACCEPTED
+  PAID
+  HANDED_OVER
+  DELIVERED
+  REJECTED
+  CANCELLED
+  DISPUTED
+}
+
+enum PaymentStatus {
+  PENDING
+  HELD
+  RELEASED
+  REFUNDED
+  FAILED
+}
+
+model User {
+  id                 String             @id @default(cuid())
+  phone              String?            @unique
+  email              String?            @unique
+  fullName           String
+  avatarUrl          String?
+  role               UserRole           @default(USER)
+  verification       VerificationStatus @default(UNVERIFIED)
+  phoneVerifiedAt    DateTime?
+  emailVerifiedAt    DateTime?
+  isDemo             Boolean            @default(false)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  trips              Trip[]
+  shipments          Shipment[]         @relation("ShipmentSender")
+  bookingsAsTraveler Booking[]          @relation("TravelerBookings")
+  bookingsAsSender   Booking[]          @relation("SenderBookings")
+  reviewsGiven       Review[]           @relation("ReviewsGiven")
+  reviewsReceived    Review[]           @relation("ReviewsReceived")
+  messages           Message[]
+  events             BookingEvent[]
+}
+
+model OtpCode {
+  id         String    @id @default(cuid())
+  identifier String
+  codeHash   String
+  attempts   Int       @default(0)
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([identifier, createdAt])
+}
+
+model Trip {
+  id                String     @id @default(cuid())
+  travelerId        String
+  traveler          User       @relation(fields: [travelerId], references: [id], onDelete: Restrict)
+  origin            String
+  destination       String
+  via               String[]   @default([])
+  departureAt       DateTime
+  availableWeightKg Float
+  pricePerKg        Int
+  currency          String     @default("XOF")
+  notes             String?
+  status            TripStatus @default(OPEN)
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+  bookings          Booking[]
+
+  @@index([origin, destination, departureAt, status])
+  @@index([travelerId, createdAt])
+}
+
+model Shipment {
+  id               String         @id @default(cuid())
+  senderId         String
+  sender           User           @relation("ShipmentSender", fields: [senderId], references: [id], onDelete: Restrict)
+  origin           String
+  destination      String
+  description      String
+  category         String         @default("autre")
+  weightKg         Float
+  declaredValue    Int?
+  budget           Int?
+  currency         String         @default("XOF")
+  desiredDate      DateTime?
+  recipientName    String
+  recipientPhone   String
+  prohibitedAckAt  DateTime
+  status           ShipmentStatus @default(SEARCHING)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  bookings         Booking[]
+
+  @@index([origin, destination, desiredDate, status])
+  @@index([senderId, createdAt])
+}
+
+model Booking {
+  id            String         @id @default(cuid())
+  tripId        String
+  shipmentId    String
+  travelerId    String
+  senderId      String
+  trip          Trip           @relation(fields: [tripId], references: [id], onDelete: Restrict)
+  shipment      Shipment       @relation(fields: [shipmentId], references: [id], onDelete: Restrict)
+  traveler      User           @relation("TravelerBookings", fields: [travelerId], references: [id], onDelete: Restrict)
+  sender        User           @relation("SenderBookings", fields: [senderId], references: [id], onDelete: Restrict)
+  status        BookingStatus  @default(REQUESTED)
+  weightKg      Float
+  agreedPrice   Int
+  serviceFee    Int
+  currency      String
+  handoverCode  String
+  deliveryCode  String
+  codeAttempts  Int            @default(0)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  payment       Payment?
+  messages      Message[]
+  events        BookingEvent[]
+  reviews       Review[]
+
+  @@unique([tripId, shipmentId])
+  @@index([travelerId, status])
+  @@index([senderId, status])
+}
+
+model BookingEvent {
+  id        String   @id @default(cuid())
+  bookingId String
+  booking   Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  actorId   String?
+  actor     User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  type      String
+  note      String?
+  createdAt DateTime @default(now())
+
+  @@index([bookingId, createdAt])
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  senderId  String
+  sender    User     @relation(fields: [senderId], references: [id], onDelete: Restrict)
+  bookingId String
+  booking   Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  body      String
+  createdAt DateTime @default(now())
+
+  @@index([bookingId, createdAt])
+}
+
+model Payment {
+  id          String        @id @default(cuid())
+  bookingId   String        @unique
+  booking     Booking       @relation(fields: [bookingId], references: [id], onDelete: Restrict)
+  provider    String
+  providerRef String?       @unique
+  amount      Int
+  currency    String
+  status      PaymentStatus @default(PENDING)
+  heldAt      DateTime?
+  releasedAt  DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+model Review {
+  id          String   @id @default(cuid())
+  authorId    String
+  recipientId String
+  author      User     @relation("ReviewsGiven", fields: [authorId], references: [id], onDelete: Restrict)
+  recipient   User     @relation("ReviewsReceived", fields: [recipientId], references: [id], onDelete: Restrict)
+  bookingId   String
+  booking     Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  rating      Int
+  comment     String?
+  createdAt   DateTime @default(now())
+
+  @@unique([authorId, bookingId])
+  @@index([recipientId, createdAt])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  action     String
+  entityType String
+  entityId   String?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  @@index([entityType, entityId, createdAt])
+}
