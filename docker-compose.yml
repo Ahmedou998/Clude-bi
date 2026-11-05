@@ -15,5 +15,26 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+  web:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/teranga_gp?schema=public
+      SESSION_SECRET: local-compose-secret-change-before-production-123456
+      ALLOW_DEMO_OTP: "true"
+      PAYMENT_PROVIDER: simulation
+    ports:
+      - "3000:3000"
+    command: ["sh", "-c", "npm run db:push && npm start"]
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:3000/api/health').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))\""]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 30s
 volumes:
   gp_pgdata:

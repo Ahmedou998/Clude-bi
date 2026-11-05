@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { bookingActionSchema, otpVerifySchema, shipmentSchema, tripSchema } from "./validations";
+import { bookingActionSchema, bookingLocationSchema, otpVerifySchema, shipmentSchema, tripSchema } from "./validations";
 
 const future = new Date(Date.now() + 86_400_000).toISOString();
 
@@ -29,5 +29,9 @@ describe("autres schémas", () => {
   it("valide une action de réservation", () => {
     expect(bookingActionSchema.safeParse({ action: "pay" }).success).toBe(true);
     expect(bookingActionSchema.safeParse({ action: "steal" }).success).toBe(false);
+  });
+  it("valide les coordonnées de partage et borne les positions", () => {
+    expect(bookingLocationSchema.safeParse({ kind: "meeting", latitude: 14.7, longitude: -17.4, label: "Gare" }).success).toBe(true);
+    expect(bookingLocationSchema.safeParse({ kind: "live", latitude: 91, longitude: 0 }).success).toBe(false);
   });
 });

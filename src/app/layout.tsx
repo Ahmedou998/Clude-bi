@@ -4,6 +4,7 @@ import { Providers } from "@/components/providers";
 import { paymentsAreSimulated } from "@/lib/payments";
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"),
   title: { default: "Teranga GP — Le colis voyage avec vous", template: "%s · Teranga GP" },
   description: "Envoyez un colis ou rentabilisez votre bagage entre l'Afrique et l'Europe, dans les deux sens. Paiement bloqué jusqu'à la livraison, codes de remise à usage unique.",
   applicationName: "Teranga GP",

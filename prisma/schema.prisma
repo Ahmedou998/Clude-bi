@@ -156,6 +156,13 @@ model Booking {
   handoverCode  String
   deliveryCode  String
   codeAttempts  Int            @default(0)
+  meetingLatitude Float?
+  meetingLongitude Float?
+  meetingLabel String?
+  meetingUpdatedAt DateTime?
+  liveLatitude Float?
+  liveLongitude Float?
+  liveLocationUpdatedAt DateTime?
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   payment       Payment?

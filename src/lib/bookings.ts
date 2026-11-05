@@ -165,7 +165,17 @@ export async function applyBookingAction(user: UserRef, bookingId: string, input
         break;
     }
 
-    await tx.booking.update({ where: { id: b.id }, data: { status: to } });
+    const clearLocations = ["DELIVERED", "REJECTED", "CANCELLED", "DISPUTED"].includes(to);
+    await tx.booking.update({
+      where: { id: b.id },
+      data: {
+        status: to,
+        ...(clearLocations ? {
+          meetingLatitude: null, meetingLongitude: null, meetingLabel: null, meetingUpdatedAt: null,
+          liveLatitude: null, liveLongitude: null, liveLocationUpdatedAt: null,
+        } : {}),
+      },
+    });
     await event(tx, b.id, user.id, to, note);
     await tx.auditLog.create({ data: { actorId: user.id, action: `booking.${input.action}`, entityType: "Booking", entityId: b.id, metadata: { from: b.status, to } } });
     return { id: b.id, status: to };

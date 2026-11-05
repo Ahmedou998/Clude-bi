@@ -12,11 +12,23 @@ Paiement bloqué jusqu'à la livraison, codes à usage unique pour la remise et 
 - **Trajets** : publication, recherche (ville/pays libres, accents ignorés), tri, capacité restante en direct.
 - **Colis** : déclaration (contenu, catégorie, destinataire, objets interdits) et **matching** avec score de compatibilité (itinéraire, capacité, date, budget).
 - **Réservation** : demande → acceptation → paiement bloqué → remise (code 1) → livraison (code 2, fonds libérés). Annulation (remboursement), signalement de problème, messagerie, avis, historique horodaté.
+- **Localisation de remise** : point de rendez-vous partagé volontairement et suivi GPS temporaire du voyageur après la remise du colis, visible uniquement par les deux participants.
+- **Protocole de transport** : récapitulatif généré depuis la réservation, imprimable et signable par les parties. Modèle pilote à faire valider juridiquement avant usage réel; il ne constitue pas une signature électronique.
 - **Confiance** : téléphone vérifié par code, réputation (note, livraisons), codes visibles uniquement de l'expéditeur, 5 essais maximum, destinataire visible du voyageur seulement après paiement.
 - **Multi-devises** : XOF, EUR, USD, GBP, CAD, MAD, TND, GHS ; affichage converti (taux indicatifs).
 - **Espace personnel** avec « À faire maintenant », PWA (manifeste), en-têtes de sécurité, limitation de débit, sessions signées httpOnly.
 
 ## Démarrage local
+
+### Avec Docker
+
+```bash
+docker compose up --build
+```
+
+L'application attend que PostgreSQL soit prêt, crée les tables, puis démarre sur http://localhost:3000. Les données PostgreSQL restent dans le volume `gp_pgdata`.
+
+### Avec Node.js
 
 ```bash
 cp .env.example .env
@@ -37,6 +49,7 @@ Ouvrir http://localhost:3000. Pour se connecter : saisir n'importe quel numéro 
 
 1. Pousser le dépôt sur GitHub avec `render.yaml` à la racine.
 2. Dans Render, choisir **New > Blueprint**, connecter ce dépôt et valider le blueprint. Il crée le service web et PostgreSQL dans la région de Francfort ; `SESSION_SECRET` est généré automatiquement.
+	Le sous-domaine gratuit du service est `https://teranga-gp.onrender.com` (si disponible) ; il est défini comme URL canonique de l'application.
 3. Le déploiement est en mode pilote : le code OTP est affiché à l'écran et les paiements sont simulés. Ne pas l'utiliser pour traiter de vrais paiements ou des comptes publics.
 4. Avant un lancement public, configurer `OTP_WEBHOOK_URL` et `OTP_WEBHOOK_TOKEN`, puis passer `ALLOW_DEMO_OTP` à `false` ; intégrer et valider un prestataire de paiement séparément.
 

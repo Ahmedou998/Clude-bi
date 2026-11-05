@@ -11,6 +11,7 @@ import { categoryLabel } from "@/lib/catalog";
 import { Icon } from "./icons";
 import { useToast } from "./providers";
 import { Stars } from "./trip-card";
+import { BookingLocation } from "./booking-location";
 
 const hhmm = (iso: string) => new Date(iso).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
 const dayTime = (iso: string) => new Date(iso).toLocaleString("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
@@ -96,6 +97,18 @@ export function BookingPanel({ b }: { b: BookingDetail }) {
             </div>
           )}
         </section>
+
+        <BookingLocation bookingId={b.id} status={b.status} actor={b.actor} />
+
+        {["ACCEPTED", "PAID", "HANDED_OVER", "DELIVERED"].includes(b.status) && (
+          <section className="panel spread contract-link">
+            <div>
+              <h3 style={{ fontSize: 18 }}>Protocole de transport</h3>
+              <p className="muted" style={{ fontSize: 14 }}>Récapitulatif des engagements, prêt à imprimer et à signer.</p>
+            </div>
+            <Link className="btn btn-ghost btn-sm" href={`/reservations/${b.id}/contrat`}><Icon name="shield" size={16} /> Voir le contrat</Link>
+          </section>
+        )}
 
         {/* Actions de la prochaine étape */}
         {!closed && b.status !== "DELIVERED" && (
